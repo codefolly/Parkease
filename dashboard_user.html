@@ -36,6 +36,10 @@
                 <div id="userInfo" class="btn btn-secondary" style="pointer-events: none;">User</div>
             </div>
 
+            <div id="dashboardMap" class="glass-panel"
+                style="height: 300px; margin-bottom: 2rem; border: 1px solid var(--accent); position: relative; overflow: hidden;">
+            </div>
+
             <div class="grid-cols-2" id="bookingList">
                 <div class="glass-panel"
                     style="padding: 2rem; text-align: center; grid-column: 1 / -1; color: var(--text-muted);">
@@ -45,6 +49,11 @@
         </main>
     </div>
 
+    <!-- Leaflet JS (Required for Dashboard Map) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <script src="./assets/js/utils.js?v=4.0"></script>
     <script src="./assets/js/app.js?v=4.0"></script>
     <script>
         async function loadBookings() {

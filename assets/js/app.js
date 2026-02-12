@@ -197,10 +197,9 @@ function initMap() {
         // Add Zoom Control to top-right
         L.control.zoom({ position: 'topright' }).addTo(mapInstance);
 
-        // Dark Matter Tile Layer
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
+        // Standard OSM Layer (Fallback for visibility issues)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(mapInstance);
 
@@ -216,10 +215,9 @@ function initMap() {
                 .catch(err => console.log("Location denied"));
         }
 
-        // Force resize
-        setTimeout(() => {
-            mapInstance.invalidateSize();
-        }, 500);
+        // Force resize multiple times to catch layout shifts
+        setTimeout(() => mapInstance.invalidateSize(), 500);
+        setTimeout(() => mapInstance.invalidateSize(), 2000);
 
     } catch (error) {
         console.error("Error initializing Leaflet map:", error);
@@ -227,46 +225,88 @@ function initMap() {
     }
 }
 
+
+
 function updateMapMarkers(locations, shouldFitBounds = true) {
     if (!mapInstance) initMap();
     if (!mapInstance) return;
 
-    markerLayer.clearLayers();
-    markersMap = {}; // Reset map
+    // markersMap is { id: markerInstance }
+    const incomingIds = new Set(locations.map(l => l.id));
 
-    if (locations && locations.length > 0) {
-        // Optional: Fit bounds to show all markers
-        const bounds = L.latLngBounds();
+    // 1. Remove markers that are no longer in the list
+    for (const id in markersMap) {
+        if (!incomingIds.has(parseInt(id))) {
+            markerLayer.removeLayer(markersMap[id]);
+            delete markersMap[id];
+        }
+    }
 
-        locations.forEach(loc => {
-            const lat = parseFloat(loc.latitude);
-            const lng = parseFloat(loc.longitude);
-            if (isNaN(lat) || isNaN(lng)) return;
+    const bounds = L.latLngBounds();
 
-            bounds.extend([lat, lng]);
+    // 2. Add or Update markers
+    locations.forEach(loc => {
+        const lat = parseFloat(loc.latitude);
+        const lng = parseFloat(loc.longitude);
+        if (isNaN(lat) || isNaN(lng)) return;
 
+        bounds.extend([lat, lng]);
+
+        // Calculate Availability Color
+        // If available_slots is undefined (old API), default to success
+        const available = (loc.available_slots !== undefined) ? parseInt(loc.available_slots) : parseInt(loc.total_slots);
+        const total = parseInt(loc.total_slots);
+        let statusColor = 'var(--success)';
+        if (available === 0) statusColor = 'var(--danger)'; // Full
+        else if (available < total * 0.2) statusColor = 'var(--warning)'; // Low
+
+        const html = `<div class="marker-pin" style="background:${statusColor};"><i class="fas fa-parking"></i></div>`;
+
+        if (markersMap[loc.id]) {
+            // Update existing
+            const marker = markersMap[loc.id];
+            marker.setLatLng([lat, lng]);
+
+            // Update Icon Color if changed
+            const icon = marker.getIcon();
+            if (icon.options.html !== html) {
+                const newIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: html,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+                marker.setIcon(newIcon);
+            }
+            // Update Popup Content (keep it simple to avoid closing open popups unexpectedly)
+            // We only update if the user isn't currently looking at it, OR we just update the text parts?
+            // For now, let's leave popup content static until re-opened to prevent UX jitter.
+        } else {
+            // Create New
             const icon = L.divIcon({
                 className: 'custom-marker',
-                html: `<div class="marker-pin"><i class="fas fa-parking"></i></div>`,
+                html: html,
                 iconSize: [30, 30],
                 iconAnchor: [15, 15]
             });
 
             const marker = L.marker([lat, lng], { icon: icon });
 
-            // Safe string escaping for the onclick handler
+            // Safe string escaping
             const safeName = loc.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const safeQr = loc.qr_code_url ? loc.qr_code_url : '';
 
-            // Human Tone & Glassmorphism Layout
+            // Enhanced Popup with Live Data
             const popupContent = `
                 <div style="min-width: 200px;">
                     <div class="marker-popup-header">
                         <strong style="display: block; font-size: 1.15em; color: #fff; letter-spacing: 0.5px;">${loc.name}</strong>
                     </div>
                     <div class="marker-popup-body">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                            <span style="color: #94a3b8; font-size: 0.9em;">Rate</span>
+                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span class="badge" style="background:${statusColor}20; color:${statusColor}; border:1px solid ${statusColor}40">
+                                ${available} / ${total} Available
+                            </span>
                             <span class="marker-popup-price">NPR ${loc.price_per_hour}/hr</span>
                         </div>
                         <p style="color: #cbd5e1; font-size: 0.9em; margin-bottom: 1rem; line-height: 1.4;">
@@ -274,16 +314,7 @@ function updateMapMarkers(locations, shouldFitBounds = true) {
                         </p>
                         <img src="${loc.image_url || './assets/img/placeholder.jpg'}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;" onerror="this.style.display='none'">
                         <button onclick="openBookingModal(${loc.id}, '${safeName}', ${loc.price_per_hour}, '${safeQr}')" 
-                                class="btn" style="
-                                    width: 100%; 
-                                    padding: 0.6rem; 
-                                    font-size: 0.9rem; 
-                                    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-                                    border: none;
-                                    color: white;
-                                    font-weight: 600;
-                                    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
-                                ">
+                                class="btn" style="width: 100%;">
                             Reserve Spot
                         </button>
                     </div>
@@ -292,20 +323,12 @@ function updateMapMarkers(locations, shouldFitBounds = true) {
 
             marker.bindPopup(popupContent);
             markerLayer.addLayer(marker);
-
-            // Store reference
             markersMap[loc.id] = marker;
-        });
-
-        if (shouldFitBounds) {
-            try {
-                if (bounds.isValid()) {
-                    mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-                } else {
-                    mapInstance.setView([27.4293, 85.0305], 14);
-                }
-            } catch (e) { console.log("Map bounds error", e); }
         }
+    });
+
+    if (shouldFitBounds && bounds.isValid()) {
+        mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
     }
 }
 
@@ -346,7 +369,22 @@ window.unhighlightMarker = function (id) {
     }
 }
 
-async function loadLocations() {
+async function loadLocations(fitBounds = true) {
+    // Live Polling
+    // Live Polling (Real-time: 3s)
+    if (!window.locationPolling) {
+        window.locationPolling = setInterval(() => {
+            const searchInput = document.getElementById('searchInput');
+            // Only poll if not searching (to avoid overwriting search results)
+            if (!searchInput || searchInput.value === '') {
+                loadLocations(false);
+            }
+            // Refresh dashboard map if present
+            if (document.getElementById('dashboardMap')) {
+                loadDashboardMapData();
+            }
+        }, 3000); // Poll every 3s
+    }
     try {
         const response = await fetch('backend/router.php?action=get_approved_locations', { credentials: 'include' });
         const result = await response.json();
@@ -365,7 +403,7 @@ async function loadLocations() {
 
             // Render Map
             try {
-                updateMapMarkers(allLocations);
+                updateMapMarkers(allLocations, fitBounds);
             } catch (err) {
                 console.error("Map update failed:", err);
                 alert("Map update failed: " + err.message);
@@ -599,4 +637,90 @@ function initPickerMap() {
 
     // Invalidate size to ensure proper rendering
     setTimeout(() => { pickerMapInstance.invalidateSize(); }, 200);
+}
+
+
+// --- User Dashboard Map Logic ---
+let dashboardMapInstance = null;
+let dashboardMarkers = {};
+
+async function loadDashboardMapData() {
+    const mapContainer = document.getElementById('dashboardMap');
+    if (!mapContainer) return;
+
+    if (!dashboardMapInstance) {
+        dashboardMapInstance = L.map('dashboardMap', {
+            center: [27.4293, 85.0305],
+            zoom: 13,
+            zoomControl: false
+        });
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(dashboardMapInstance);
+    }
+
+    try {
+        // Fetch bookings to show on map
+        const response = await fetch('backend/router.php?action=get_my_bookings');
+        const result = await response.json();
+
+        if (result.success && result.data.length > 0) {
+            const bounds = L.latLngBounds();
+
+            // Clear old markers not in new set? 
+            // For simplicity in this demo, we'll just add new ones or update status.
+            // Full diffing similar to main map recommended for strict performance.
+
+            result.data.forEach(b => {
+                // We need lat/lng in booking data. 
+                // Assumption: get_my_bookings joins with locations table and returns lat/lng.
+                // If not, we might need to fetch location details. 
+                // Let's assume the backend provides it or we add it to the view.
+
+                // fallback if missing coords in booking view (update backend if needed)
+                // For now, let's assume we might not have it and need to fetch or generic.
+                // To be safe, let's fetch location details if lat is missing.
+
+                // Actually, let's check if the booking object has lat/lng. 
+                // The current `get_my_bookings` likely does a JOIN.
+                // Let's verify `Booking.php` later. If missing, we skip for now.
+
+                if (b.latitude && b.longitude) {
+                    const lat = parseFloat(b.latitude);
+                    const lng = parseFloat(b.longitude);
+                    bounds.extend([lat, lng]);
+
+                    const statusColor = b.status === 'confirmed' ? 'var(--success)' : 'var(--warning)';
+                    const html = `<div class="marker-pin marker-pulse" style="background:${statusColor};"><i class="fas fa-car"></i></div>`;
+
+                    const icon = L.divIcon({
+                        className: 'custom-marker',
+                        html: html,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+
+                    if (dashboardMarkers[b.id]) {
+                        dashboardMarkers[b.id].setIcon(icon);
+                    } else {
+                        const marker = L.marker([lat, lng], { icon: icon }).addTo(dashboardMapInstance);
+                        marker.bindPopup(`<b>${b.location_name}</b><br>Status: ${b.status}`);
+                        dashboardMarkers[b.id] = marker;
+                    }
+                }
+            });
+
+            if (Object.keys(dashboardMarkers).length > 0 && !window.dashboardMapFit) {
+                dashboardMapInstance.fitBounds(bounds, { padding: [50, 50] });
+                window.dashboardMapFit = true; // Fit only once to allow user panning
+            }
+        }
+    } catch (e) {
+        console.error("Dashboard map error", e);
+    }
+}
+
+// Init dashboard map on load if present
+if (document.getElementById('dashboardMap')) {
+    loadDashboardMapData();
 }

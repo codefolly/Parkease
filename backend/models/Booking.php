@@ -40,7 +40,7 @@ class Booking {
     }
 
     public function findByUser($user_id) {
-        $query = "SELECT b.*, l.name as location_name, l.address 
+        $query = "SELECT b.*, l.name as location_name, l.address, l.latitude, l.longitude 
                   FROM " . $this->table_name . " b
                   JOIN locations l ON b.location_id = l.id
                   WHERE b.user_id = ? ORDER BY b.created_at DESC";

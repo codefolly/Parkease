@@ -87,18 +87,30 @@ class Location {
     }
 
     public function getAllApproved($queryStr = null) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE status = 'approved'";
+        // Subquery to count active bookings (confirmed or pending) that are currently active
+        // For simplicity in this "live" view, we'll just subtract active bookings from total.
+        // A more complex check would involve time ranges, but for "now", this is sufficient.
+        $now = date('Y-m-d H:i:s');
+        
+        $query = "SELECT l.*, 
+                  (l.total_slots - (
+                      SELECT COUNT(*) FROM bookings b 
+                      WHERE b.location_id = l.id 
+                      AND b.status IN ('confirmed', 'pending')
+                      AND b.start_time <= :now AND b.end_time > :now
+                  )) as available_slots
+                  FROM " . $this->table_name . " l 
+                  WHERE l.status = 'approved'";
         
         if($queryStr) {
-            // "city" column does not exist in schema, removing it.
-            // Using wildcards. Indexes on individual columns won't be fully utilized with leading wildcard,
-            // but dataset is small.
-            $query .= " AND (name LIKE :q OR address LIKE :q)";
+            $query .= " AND (l.name LIKE :q OR l.address LIKE :q)";
         }
         
-        $query .= " ORDER BY created_at DESC";
+        $query .= " ORDER BY l.created_at DESC";
         
         $stmt = $this->conn->prepare($query);
+        
+        $stmt->bindParam(":now", $now);
         
         if($queryStr) {
             $term = "%{$queryStr}%";

@@ -1,0 +1,17 @@
+
+# Dependencies
+/vendor
+/node_modules
+
+# Environment & Config
+.env
+/backend/config/db.php
+
+# System Files
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode
+.idea
