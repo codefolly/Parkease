@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard | ParkEase</title>
+    <link rel="stylesheet" href="./assets/css/style.css?v=4.0">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo logo">ParkEase</div>
+            <div class="sidebar-menu">
+                <a href="index.html" class="menu-item">
+                    <span>🔍</span> Find Parking
+                </a>
+                <a href="#" class="menu-item active">
+                    <span>📅</span> My Bookings
+                </a>
+                <div style="flex-grow: 1;"></div>
+                <a href="#" id="logoutBtn" class="menu-item" style="color: var(--danger);">
+                    <span>🚪</span> Sign Out
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-bar">
+                <div>
+                    <h2 style="margin-bottom: 0.25rem;">My Bookings</h2>
+                    <p style="color: var(--text-muted);">Track your active and past reservations</p>
+                </div>
+                <div id="userInfo" class="btn btn-secondary" style="pointer-events: none;">User</div>
+            </div>
+
+            <div class="grid-cols-2" id="bookingList">
+                <div class="glass-panel"
+                    style="padding: 2rem; text-align: center; grid-column: 1 / -1; color: var(--text-muted);">
+                    Syncing data...
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="./assets/js/app.js?v=4.0"></script>
+    <script>
+        async function loadBookings() {
+            const list = document.getElementById('bookingList');
+            try {
+                const response = await fetch('backend/router.php?action=get_my_bookings');
+                const result = await response.json();
+
+                if (result.success) {
+                    if (!result.data || result.data.length === 0) {
+                        list.innerHTML = `<div class="glass-panel" style="padding: 3rem; text-align: center; grid-column: 1 / -1;">
+                            <h3 style="margin-bottom: 1rem;">No bookings found</h3>
+                            <a href="index.html" class="btn">Find a Spot Now</a>
+                        </div>`;
+                        return;
+                    }
+                    list.innerHTML = result.data.map(b => `
+                        <div class="glass-panel" style="padding: 0;">
+                            <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 600;">${b.location_name}</span>
+                                <span style="padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; ${b.status === 'pending' ? 'background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning);' : 'background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success);'}">
+                                    ${b.status}
+                                </span>
+                            </div>
+                            <div style="padding: 1.5rem;">
+                                <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">${b.address}</p>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                                    <span style="color: var(--text-muted);">Start Time</span>
+                                    <span>${b.start_time}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                                    <span style="color: var(--text-muted);">End Time</span>
+                                    <span>${b.end_time}</span>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.85rem;">Total Paid</span>
+                                    <span style="color: var(--primary); font-weight: 700; font-size: 1.1rem;">NPR ${b.total_price}</span>
+                                </div>
+                                
+                                ${b.status === 'pending' ? `<button class="btn btn-danger" onclick="cancelBooking(${b.id})" style="width: 100%; margin-top: 1rem;">Cancel Reservation</button>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = `<p style="color: var(--danger);">${result.message || 'Error loading bookings.'}</p>`;
+                }
+            } catch (e) {
+                list.innerHTML = '<p style="color: var(--text-muted);">Error loading history.</p>';
+            }
+        }
+
+        async function cancelBooking(id) {
+            if (!confirm("Are you sure you want to cancel this booking?")) return;
+            try {
+                const response = await fetch('backend/router.php?action=cancel_booking', {
+                    method: 'POST',
+                    body: JSON.stringify({ booking_id: id })
+                });
+                const result = await response.json();
+                alert(result.message);
+                loadBookings();
+            } catch (e) {
+                alert("Error cancelling.");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.checkAuthStatus) checkAuthStatus(); // From app.js
+            loadBookings();
+        });
+    </script>
+</body>
+
+</html>

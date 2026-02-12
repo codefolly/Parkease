@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | ParkEase</title>
+    <link rel="stylesheet" href="./assets/css/style.css?v=4.0">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar" style="border-right-color: var(--primary);">
+            <div class="sidebar-logo logo">Admin Panel</div>
+            <div class="sidebar-menu">
+                <a href="#" class="menu-item active" onclick="showSection('approvals')">
+                    <span>⚡</span> Approvals
+                </a>
+                <a href="#" class="menu-item" onclick="showSection('locations')">
+                    <span>📍</span> All Locations
+                </a>
+                <a href="#" class="menu-item" onclick="showSection('users')">
+                    <span>👥</span> Users
+                </a>
+                <a href="#" class="menu-item" onclick="showSection('allBookings')">
+                    <span>📅</span> All Bookings
+                </a>
+                <div style="flex-grow: 1;"></div>
+                <a href="#" id="logoutBtn" class="menu-item" style="color: var(--danger);">
+                    <span>🚪</span> Sign Out
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div>
+                    <h2>Overview</h2>
+                    <p style="color: var(--text-muted);">System Status: <span
+                            style="color: var(--success);">Operational</span> | <span id="clock"
+                            style="font-size: 0.9em;"></span></p>
+                </div>
+                <div class="glass-panel" style="padding: 0.5rem 1rem; border-color: var(--primary);">Administrator</div>
+            </header>
+
+            <!-- Stats Module -->
+            <div class="grid-cols-4" style="margin-bottom: 2rem;">
+                <div class="glass-panel" style="padding: 1.5rem; text-align: center;">
+                    <h3 style="color: var(--primary); font-size: 2rem; margin-bottom: 0.5rem;" id="statUsers">-</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Total Users</p>
+                </div>
+                <div class="glass-panel" style="padding: 1.5rem; text-align: center;">
+                    <h3 style="color: var(--accent); font-size: 2rem; margin-bottom: 0.5rem;" id="statVendors">-</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Total Vendors</p>
+                </div>
+                <div class="glass-panel" style="padding: 1.5rem; text-align: center;">
+                    <h3 style="color: var(--success); font-size: 2rem; margin-bottom: 0.5rem;" id="statRevenue">-</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Revenue (NPR)</p>
+                </div>
+                <div class="glass-panel" style="padding: 1.5rem; text-align: center;">
+                    <h3 style="color: orange; font-size: 2rem; margin-bottom: 0.5rem;" id="statPending">-</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Pending Actions</p>
+                </div>
+            </div>
+
+            <!-- Pending Approvals -->
+            <section id="approvals">
+                <h4 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    Pending Requests</h4>
+                <div id="pendingList" class="grid-cols-2" style="margin-top:1rem;">
+                    <p>Loading...</p>
+                </div>
+            </section>
+
+            <!-- All Locations -->
+            <section id="locations" style="display: none;">
+                <h4 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    System Database</h4>
+                <div id="allLocationsList" class="grid-cols-3" style="margin-top:1rem;">
+                    <p>Loading...</p>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="users" style="display: none;">
+                <h4 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    User Management</h4>
+                <div class="glass-panel" style="padding: 0;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
+                                <th style="padding: 1rem;">ID</th>
+                                <th style="padding: 1rem;">Name</th>
+                                <th style="padding: 1rem;">Email</th>
+                                <th style="padding: 1rem;">Role</th>
+                                <th style="padding: 1rem;">Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody" style="font-size: 0.9rem;">
+                            <tr>
+                                <td colspan="5" style="padding: 1rem; text-align: center;">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- All Bookings -->
+            <section id="allBookings" style="display: none;">
+                <h4 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    Booking History</h4>
+
+                <div class="glass-panel" style="padding: 0;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
+                                <th style="padding: 1rem;">ID</th>
+                                <th style="padding: 1rem;">User</th>
+                                <th style="padding: 1rem;">Location</th>
+                                <th style="padding: 1rem;">Time</th>
+                                <th style="padding: 1rem;">Amount</th>
+                                <th style="padding: 1rem;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsTableBody" style="font-size: 0.9rem;">
+                            <tr>
+                                <td colspan="6" style="padding: 1rem; text-align: center;">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="./assets/js/app.js?v=4.0"></script>
+
+    <script>
+        function showSection(id) {
+            document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+
+            // Highlight active menu
+            const activeLink = Array.from(document.querySelectorAll('.menu-item')).find(el => el.onclick.toString().includes(id));
+            if (activeLink) activeLink.classList.add('active');
+
+            document.getElementById(id).style.display = 'block';
+
+            if (id === 'approvals') loadApprovals();
+            if (id === 'locations') loadAllLocations();
+            if (id === 'users') loadUsers();
+            if (id === 'allBookings') loadAllBookings();
+        }
+
+        async function loadUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" style="padding: 1rem; text-align: center;">Loading...</td></tr>';
+            try {
+                const response = await fetch('backend/router.php?action=get_all_users', { credentials: 'include' });
+                const result = await response.json();
+                if (result.success) {
+                    tbody.innerHTML = result.data.map(u => `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 1rem;">#${u.id}</td>
+                            <td style="padding: 1rem; font-weight: 500;">${u.full_name}</td>
+                            <td style="padding: 1rem; color: var(--text-muted);">${u.email}</td>
+                            <td style="padding: 1rem;">
+                                <span style="font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 99px; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); ${u.role === 'admin' ? 'color: var(--accent); border-color: var(--accent);' : (u.role === 'vendor' ? 'color: var(--warning); border-color: var(--warning);' : 'color: var(--text-muted);')}">
+                                    ${u.role}
+                                </span>
+                            </td>
+                            <td style="padding: 1rem; color: var(--text-muted); font-size: 0.85rem;">${u.created_at}</td>
+                        </tr>
+                     `).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="padding: 1rem; text-align: center; color: var(--danger);">${result.message}</td></tr>`;
+                }
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding: 1rem; text-align: center; color: var(--danger);">Failed to load users</td></tr>`;
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('backend/router.php?action=get_admin_stats');
+                const text = await response.text();
+                try {
+                    const result = JSON.parse(text);
+                    if (result.success) {
+                        const data = result.data;
+                        document.getElementById('statUsers').innerText = data.total_users;
+                        document.getElementById('statVendors').innerText = data.total_vendors;
+                        document.getElementById('statRevenue').innerText = `NPR ${data.revenue}`;
+                        document.getElementById('statPending').innerText = data.pending_approvals;
+                    } else {
+                        console.error('Stats API failed:', result.message);
+                    }
+                } catch (e) {
+                    console.error('JSON Parse Error stats:', text);
+                }
+            } catch (e) {
+                console.error("Stats Network error", e);
+            }
+        }
+
+        async function loadAllBookings() {
+            const tbody = document.getElementById('bookingsTableBody');
+            try {
+                const response = await fetch('backend/router.php?action=get_all_bookings');
+                const text = await response.text();
+                try {
+                    const result = JSON.parse(text);
+                    if (result.success) {
+                        if (result.data.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="6" style="padding: 1rem; text-align: center;">No bookings found.</td></tr>';
+                            return;
+                        }
+                        tbody.innerHTML = result.data.map(b => `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td style="padding: 1rem;">#${b.id}</td>
+                                <td style="padding: 1rem;">
+                                    <div>${b.user_name || 'Unknown User'}</div>
+                                    <small style="color: var(--text-muted);">${b.user_email || 'No Email'}</small>
+                                </td>
+                                <td style="padding: 1rem;">${b.location_name || 'Unknown Location'}</td>
+                                <td style="padding: 1rem;">${b.start_time}</td>
+                                <td style="padding: 1rem; color: var(--success);">NPR ${b.total_price}</td>
+                                <td style="padding: 1rem;">
+                                    <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);">
+                                        ${b.status ? b.status.toUpperCase() : 'UNKNOWN'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="6" style="padding: 1rem; text-align: center; color: var(--danger);">Error: ${result.message}</td></tr>`;
+                    }
+                } catch (e) {
+                    console.error('JSON Parse Error bookings:', text);
+                    tbody.innerHTML = `<tr><td colspan="6" style="padding: 1rem; text-align: center; color: var(--danger);">Server Error (Check Console)</td></tr>`;
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding: 1rem; text-align: center; color: var(--danger);">Network Error</td></tr>';
+            }
+        }
+
+        async function loadApprovals() {
+            const container = document.getElementById('pendingList');
+            container.innerHTML = '<p>Scan complete.</p>';
+            try {
+                const response = await fetch('backend/router.php?action=get_all_locations');
+                const text = await response.text();
+                try {
+                    const result = JSON.parse(text);
+                    if (result.success) {
+                        const pending = result.data.filter(l => l.status === 'pending');
+                        if (pending.length === 0) {
+                            container.innerHTML = `<div class="glass-panel" style="grid-column: 1/-1; padding: 2rem; text-align: center;">No pending requests.</div>`;
+                            return;
+                        }
+                        container.innerHTML = pending.map(loc => `
+                            <div class="glass-panel" style="padding: 0; overflow: hidden;">
+                                <div style="height: 200px; background: #222;">
+                                    <img src="${loc.image_url ? loc.image_url : './assets/img/placeholder.jpg'}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='./assets/img/placeholder.jpg'">
+                                </div>
+                                <div style="padding: 1.5rem;">
+                                    <h4 style="margin-bottom: 0.5rem;">${loc.name}</h4>
+                                    <p style="margin-bottom: 0.5rem; color: var(--text-muted);">Vendor: <strong style="color: var(--text-main);">${loc.vendor_name || 'Unknown'}</strong></p>
+                                    <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">${loc.address}</p>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                                        <span>Rate</span>
+                                        <span style="color: var(--primary);">NPR ${loc.price_per_hour}/hr</span>
+                                    </div>
+                                    <div style="display:flex; gap:1rem;">
+                                        <button class="btn" style="flex:1; background: var(--success);" onclick="updateStatus(${loc.id}, 'approve_location')">Approve</button>
+                                        <button class="btn btn-secondary" style="flex:1; background: var(--danger); border:none;" onclick="updateStatus(${loc.id}, 'reject_location')">Reject</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = `<p style="color:red">Error: ${result.message}</p>`;
+                    }
+                } catch (e) {
+                    console.error('JSON Parse Error approvals:', text);
+                    container.innerHTML = `<p style="color:red">Server Error: Check Console</p>`;
+                }
+            } catch (e) { container.innerHTML = '<p>network error.</p>'; }
+        }
+
+        async function loadAllLocations() {
+            const container = document.getElementById('allLocationsList');
+            try {
+                const response = await fetch('backend/router.php?action=get_all_locations');
+                const text = await response.text();
+                try {
+                    const result = JSON.parse(text);
+                    if (result.success) {
+                        container.innerHTML = result.data.map(loc => `
+                            <div class="glass-panel" style="padding: 0; overflow: hidden;">
+                                <div style="height: 120px; background: #222;">
+                                    <img src="${loc.image_url ? loc.image_url : './assets/img/placeholder.jpg'}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='./assets/img/placeholder.jpg'">
+                                </div>
+                                <div style="padding: 1.5rem;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                                        <span style="font-weight: 700;">${loc.name}</span>
+                                        <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px; ${loc.status === 'approved' ? 'background: rgba(16,185,129,0.2); color: var(--success);' : 'background: rgba(245,158,11,0.2); color: var(--warning);'}">
+                                            ${loc.status.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted);">Vendor: ${loc.vendor_name || 'Unknown'}</p>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                } catch (e) {
+                    console.error('JSON Parse Error locations:', text);
+                }
+            } catch (e) { }
+        }
+
+        window.updateStatus = async function (id, action) {
+            if (!confirm("Confirm action?")) return;
+            try {
+                const response = await fetch(`backend/router.php?action=${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+                const result = await response.json();
+                alert(result.message);
+                loadApprovals();
+                loadAllLocations();
+            } catch (e) { alert("Error"); }
+        }
+
+        window.onload = function () {
+            checkAuthStatus();
+            loadApprovals();
+            loadStats();
+        }
+    </script>
+</body>
+
+</html>

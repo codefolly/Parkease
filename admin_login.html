@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal | ParkEase</title>
+    <link rel="stylesheet" href="./assets/css/style.css?v=4.0">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="auth-container">
+        <div class="glass-panel auth-box" style="border-color: var(--primary);">
+
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1 class="logo" style="margin-bottom: 0.5rem; font-size: 2rem;">ParkEase</h1>
+                <p
+                    style="color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem; font-weight: 700;">
+                    Admin Command Center</p>
+            </div>
+
+            <form id="adminLoginForm">
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" name="email" required placeholder="admin@parkease.com">
+                </div>
+                <div style="margin-bottom: 2rem;">
+                    <label class="input-label">Password</label>
+                    <input type="password" name="password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn"
+                    style="width: 100%; box-shadow: 0 0 20px rgba(59,130,246,0.3);">Initialize Session</button>
+            </form>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <a href="index.html" style="font-size: 0.85rem; color: var(--text-muted); opacity: 0.7;">&larr; Abort &
+                    Return</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="./assets/js/app.js?v=4.0"></script>
+</body>
+
+</html>

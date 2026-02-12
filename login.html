@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | ParkEase</title>
+    <link rel="stylesheet" href="./assets/css/style.css?v=4.0">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="index.html" class="logo">ParkEase</a>
+    </nav>
+
+    <div class="auth-container">
+        <div class="glass-panel auth-box">
+
+            <h2 id="pageTitle" style="text-align: center; margin-bottom: 0.5rem;">Welcome Back</h2>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Access your dashboard securely
+            </p>
+
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Sign In</div>
+                <div class="auth-tab" id="tabRegister" onclick="switchTab('register')">Create Account</div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" name="email" required placeholder="name@example.com">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="input-label">Password</label>
+                    <input type="password" name="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Sign In</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" style="display: none;">
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="input-label">Full Name</label>
+                    <input type="text" name="name" required placeholder="John Doe">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" name="email" required placeholder="name@example.com">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="input-label">Phone Number</label>
+                    <input type="text" name="phone" required placeholder="+977 9800000000">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="input-label">Password</label>
+                    <input type="password" name="password" required placeholder="Minimum 6 characters">
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label class="input-label">I am a:</label>
+                    <select name="role">
+                        <option value="user">Driver (Looking for parking)</option>
+                        <option value="vendor">Vendor (Parking Owner)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Create Account</button>
+            </form>
+
+
+
+        </div>
+    </div>
+
+    <script src="./assets/js/app.js?v=4.0"></script>
+    <script>
+        function switchTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+            const title = document.getElementById('pageTitle');
+
+            if (tab === 'login') {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                title.innerText = "Welcome Back";
+            } else {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                tabLogin.classList.remove('active');
+                tabRegister.classList.add('active');
+                title.innerText = "Join ParkEase";
+            }
+        }
+
+        // Auto-init for forms
+        document.addEventListener('DOMContentLoaded', () => {
+            // Forms are already set up by app.js global logic if ID matches, 
+            // but app.js setupForms might only run once on load. 
+            // Since script is at bottom, it should work.
+        });
+    </script>
+</body>
+
+</html>
