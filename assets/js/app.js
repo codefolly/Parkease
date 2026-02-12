@@ -164,6 +164,7 @@ async function checkAuthStatus() {
 // --- Leaflet Map Logic ---
 let mapInstance = null;
 let markerLayer = null;
+let markersMap = {}; // Store markers by ID for quick access
 
 function initMap() {
     const mapContainer = document.getElementById('map');
@@ -182,34 +183,48 @@ function initMap() {
     }
 
     try {
-        // Hetauda Coordinates default
+        console.log("Initializing Map...");
+        // Default: Hetauda
+        const defaultCenter = [27.4293, 85.0305];
+
         mapInstance = L.map('map', {
-            center: [27.4293, 85.0305],
+            center: defaultCenter,
             zoom: 14,
             zoomControl: false,
             attributionControl: false
         });
+
+        // Add Zoom Control to top-right
+        L.control.zoom({ position: 'topright' }).addTo(mapInstance);
+
+        // Dark Matter Tile Layer
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(mapInstance);
+
+        markerLayer = L.layerGroup().addTo(mapInstance);
+
+        // Try to get user location
+        if (typeof ParkEaseUtils !== 'undefined' && ParkEaseUtils.getCurrentLocation) {
+            ParkEaseUtils.getCurrentLocation()
+                .then(coords => {
+                    mapInstance.flyTo([coords.latitude, coords.longitude], 15);
+                    L.marker([coords.latitude, coords.longitude]).addTo(mapInstance).bindPopup("You are here");
+                })
+                .catch(err => console.log("Location denied"));
+        }
+
+        // Force resize
+        setTimeout(() => {
+            mapInstance.invalidateSize();
+        }, 500);
+
     } catch (error) {
         console.error("Error initializing Leaflet map:", error);
-        return;
+        alert("Map initialization failed: " + error.message);
     }
-
-    // Add Zoom Control to top-right
-    L.control.zoom({ position: 'topright' }).addTo(mapInstance);
-
-    // Dark Matter Tile Layer
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 19
-    }).addTo(mapInstance);
-
-    markerLayer = L.layerGroup().addTo(mapInstance);
-
-    // Invalidate size to ensure proper rendering if container size changes
-    setTimeout(() => {
-        if (mapInstance) mapInstance.invalidateSize();
-    }, 200);
 }
 
 function updateMapMarkers(locations, shouldFitBounds = true) {
@@ -217,6 +232,7 @@ function updateMapMarkers(locations, shouldFitBounds = true) {
     if (!mapInstance) return;
 
     markerLayer.clearLayers();
+    markersMap = {}; // Reset map
 
     if (locations && locations.length > 0) {
         // Optional: Fit bounds to show all markers
@@ -231,7 +247,7 @@ function updateMapMarkers(locations, shouldFitBounds = true) {
 
             const icon = L.divIcon({
                 className: 'custom-marker',
-                html: `<div class="marker-pin"></div>`,
+                html: `<div class="marker-pin"><i class="fas fa-parking"></i></div>`,
                 iconSize: [30, 30],
                 iconAnchor: [15, 15]
             });
@@ -242,19 +258,43 @@ function updateMapMarkers(locations, shouldFitBounds = true) {
             const safeName = loc.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const safeQr = loc.qr_code_url ? loc.qr_code_url : '';
 
+            // Human Tone & Glassmorphism Layout
             const popupContent = `
-                <div style="text-align: center; min-width: 150px; padding: 0.5rem;">
-                    <strong style="display: block; font-size: 1.1em; margin-bottom: 0.25rem; color: var(--primary);">${loc.name}</strong>
-                    <span style="color: #94a3b8; font-size: 0.9em;">NPR ${loc.price_per_hour}/hr</span>
-                    <button onclick="openBookingModal(${loc.id}, '${safeName}', ${loc.price_per_hour}, '${safeQr}')" 
-                            class="btn" style="margin-top: 0.75rem; width: 100%; padding: 0.4rem; font-size: 0.85rem;">
-                        Book Spot
-                    </button>
+                <div style="min-width: 200px;">
+                    <div class="marker-popup-header">
+                        <strong style="display: block; font-size: 1.15em; color: #fff; letter-spacing: 0.5px;">${loc.name}</strong>
+                    </div>
+                    <div class="marker-popup-body">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <span style="color: #94a3b8; font-size: 0.9em;">Rate</span>
+                            <span class="marker-popup-price">NPR ${loc.price_per_hour}/hr</span>
+                        </div>
+                        <p style="color: #cbd5e1; font-size: 0.9em; margin-bottom: 1rem; line-height: 1.4;">
+                            ${loc.description ? (loc.description.length > 50 ? loc.description.substring(0, 50) + '...' : loc.description) : 'Safe and secure parking spot.'}
+                        </p>
+                        <img src="${loc.image_url || './assets/img/placeholder.jpg'}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;" onerror="this.style.display='none'">
+                        <button onclick="openBookingModal(${loc.id}, '${safeName}', ${loc.price_per_hour}, '${safeQr}')" 
+                                class="btn" style="
+                                    width: 100%; 
+                                    padding: 0.6rem; 
+                                    font-size: 0.9rem; 
+                                    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+                                    border: none;
+                                    color: white;
+                                    font-weight: 600;
+                                    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+                                ">
+                            Reserve Spot
+                        </button>
+                    </div>
                 </div>
             `;
 
             marker.bindPopup(popupContent);
             markerLayer.addLayer(marker);
+
+            // Store reference
+            markersMap[loc.id] = marker;
         });
 
         if (shouldFitBounds) {
@@ -269,6 +309,43 @@ function updateMapMarkers(locations, shouldFitBounds = true) {
     }
 }
 
+// --- Interaction Logic ---
+
+window.flyToLocation = function (id) {
+    if (!mapInstance || !markersMap[id]) return;
+
+    // Scroll to map
+    document.getElementById('search-map').scrollIntoView({ behavior: 'smooth' });
+
+    const marker = markersMap[id];
+    mapInstance.flyTo(marker.getLatLng(), 16, {
+        animate: true,
+        duration: 1.2
+    });
+
+    setTimeout(() => {
+        marker.openPopup();
+    }, 1200);
+}
+
+window.highlightMarker = function (id) {
+    if (!markersMap[id]) return;
+    const marker = markersMap[id];
+    if (marker._icon) {
+        marker._icon.classList.add('marker-highlight');
+        marker.setZIndexOffset(1000);
+    }
+}
+
+window.unhighlightMarker = function (id) {
+    if (!markersMap[id]) return;
+    const marker = markersMap[id];
+    if (marker._icon) {
+        marker._icon.classList.remove('marker-highlight');
+        marker.setZIndexOffset(0);
+    }
+}
+
 async function loadLocations() {
     try {
         const response = await fetch('backend/router.php?action=get_approved_locations', { credentials: 'include' });
@@ -279,21 +356,38 @@ async function loadLocations() {
         if (result.success) {
             let allLocations = result.data || [];
 
+            if (allLocations.length === 0) {
+                console.warn("No locations found.");
+                if (confirm("No parking locations found. Would you like to load demo data?")) {
+                    window.location.href = 'backend/seed.php';
+                }
+            }
+
             // Render Map
-            updateMapMarkers(allLocations);
+            try {
+                updateMapMarkers(allLocations);
+            } catch (err) {
+                console.error("Map update failed:", err);
+                alert("Map update failed: " + err.message);
+            }
 
             if (!list) return; // If on homepage but no list (unlikely based on layout) or if list exists
 
             const render = (locations) => {
                 if (locations.length === 0) {
                     list.innerHTML = `<div class="glass-panel animate-fade-in" style="grid-column: 1/-1; text-align: center; padding: 2rem;">
-                        <p>No parking spots match your search.</p>
+                        <p>No parking spots found. Run backend/seed.php to load data.</p>
                     </div>`;
                     return;
                 }
 
                 list.innerHTML = locations.map(loc => `
-                    <div class="glass-panel animate-fade-in" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+                    <div class="glass-panel animate-fade-in location-card" 
+                         style="padding: 0; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: transform 0.3s ease;"
+                         onclick="flyToLocation(${loc.id})"
+                         onmouseenter="highlightMarker(${loc.id})"
+                         onmouseleave="unhighlightMarker(${loc.id})"
+                         >
                         <div style="height: 200px; background: #222; position: relative;">
                              <img src="${loc.image_url ? loc.image_url : './assets/img/placeholder.jpg'}" alt="${loc.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='./assets/img/placeholder.jpg'">
                              <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 1rem;">
@@ -311,7 +405,7 @@ async function loadLocations() {
                                 <span style="color: var(--text-muted);">Rate</span>
                                 <strong style="color: var(--primary);">NPR ${loc.price_per_hour}/hr</strong>
                             </div>
-                            <button onclick="openBookingModal(${loc.id}, '${loc.name}', ${loc.price_per_hour}, '${loc.qr_code_url || ''}')" class="btn" style="width: 100%;">Book Spot</button>
+                            <button onclick="event.stopPropagation(); openBookingModal(${loc.id}, '${loc.name}', ${loc.price_per_hour}, '${loc.qr_code_url || ''}')" class="btn" style="width: 100%;">Book Spot</button>
                         </div>
                     </div>
                 `).join('');
